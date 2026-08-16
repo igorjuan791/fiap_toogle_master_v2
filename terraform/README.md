@@ -1,62 +1,88 @@
-# Infrastructure as Code with Terraform - ToogleMaster
+# Infraestrutura como Código - ToogleMaster (Fase 3)
 
-This directory contains the Terraform configuration to provision the AWS infrastructure for the ToogleMaster project.
+Projeto Terraform modularizado que provisiona toda a infraestrutura AWS dos 5
+microsserviços do ToggleMaster (auth, flag, targeting, evaluation, analytics).
 
-## Resources Provisioned
+## Estrutura
 
-- **Networking**: VPC, Subnets (2 AZs), IGW, Route Tables, and Security Groups.
-- **RDS PostgreSQL**:
-    - `auth-db`: Instance for authentication data.
-    - `main-db`: Instance for flags and targeting data.
-- **ECR Repositories**: 5 repositories for the microservices.
-- **SQS**: `toogle-events` queue.
-- **DynamoDB**: `analytics_events` table.
-- **Redis (ElastiCache)**: `toogle-redis` cluster.
-- **EKS**: Kubernetes cluster (`toogle-cluster`) and a managed Node Group.
+```
+terraform/
+├── bootstrap/         # cria o bucket S3 do backend remoto (roda 1x, estado local)
+├── modules/
+│   ├── network/        # VPC, subnets públicas/privadas, IGW, NAT, route tables, SGs
+│   ├── eks/             # Cluster EKS + Node Group (usa a LabRole via data source)
+│   ├── database/        # 3x RDS PostgreSQL, ElastiCache (Redis), DynamoDB
+│   ├── messaging/        # SQS (+ DLQ)
+│   ├── ecr/               # 5 repositórios ECR com lifecycle policy
+│   └── argocd/             # Instalação do ArgoCD via Helm (pull-based GitOps)
+├── main.tf             # conecta os módulos
+├── providers.tf         # backend S3 + providers aws/kubernetes/helm
+├── variables.tf
+└── outputs.tf
+```
 
-## Prerequisites
+## Ambiente AWS Academy
 
-1.  **Terraform CLI** installed.
-2.  **AWS CLI** configured with appropriate credentials.
-3.  **Permissions**: Ensure you have permissions to manage the listed resources. This setup is optimized for **AWS Academy / Lab environments** by reusing the existing `LabRole`.
+Este projeto **não cria Roles/Policies de IAM**. O EKS e o Node Group usam a
+`LabRole` existente, importada via `data "aws_iam_role"` (`network`/`main.tf`).
+Se vocês migrarem para uma conta pessoal, basta trocar essa data source por
+`aws_iam_role`/`aws_iam_role_policy_attachment` reais (ver comentário em
+`variables.tf`).
 
-## Usage
+## Passo a passo
 
-1.  **Initialize Terraform**:
-    ```bash
-    terraform init
-    ```
+### 1. Bootstrap do backend remoto (rodar uma única vez)
 
-2.  **Review the Plan**:
-    ```bash
-    terraform plan
-    ```
+```bash
+cd terraform/bootstrap
+terraform init
+terraform apply -var bucket_name=SEU-BUCKET-UNICO-GLOBALMENTE
+```
 
-3.  **Apply the Changes**:
-    ```bash
-    terraform apply
-    ```
+Depois, edite `terraform/providers.tf` e troque o `bucket` do backend `s3`
+pelo nome escolhido.
 
-4.  **Retrieve Outputs**:
-    After a successful apply, Terraform will display the endpoints for RDS, Redis, SQS, and EKS. You can also view them anytime using:
-    ```bash
-    terraform output
-    ```
+### 2. Infraestrutura principal (VPC, EKS, bancos, mensageria, ECR)
 
-## Variables
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars   # edite a senha do banco
+terraform init
+terraform plan
+terraform apply
+```
 
-You can customize the setup by creating a `terraform.tfvars` file or passing variables via CLI:
+### 3. ArgoCD (2º apply, depois que o cluster já existe)
 
-- `region`: AWS region (default: `us-east-1`).
-- `db_password`: Master password for RDS (default: `SenhaTeste123`).
-- `lab_role_name`: The name of the existing IAM role for EKS (default: `LabRole`).
+```bash
+terraform apply -var install_argocd=true
+```
 
-## Why Terraform?
+Isso evita o problema de os providers `kubernetes`/`helm` tentarem se
+autenticar em um cluster que ainda não existe no mesmo plano.
 
-This replaces the previous Bash scripts (`aws-infra/`) with a declarative approach, ensuring:
-- **State Management**: Terraform keeps track of what was created.
-- **Idempotency**: Running `apply` multiple times won't create duplicate resources.
-- **Ease of Cleanup**: Remove everything with a single command:
-    ```bash
-    terraform destroy
-    ```
+## O que mudou em relação à Fase 2
+
+- **Backend remoto**: `terraform.tfstate` agora vive em S3 (`use_lockfile`
+  para lock nativo, sem precisar de tabela DynamoDB extra).
+- **Modularização**: código organizado em módulos reutilizáveis
+  (`network`, `eks`, `database`, `messaging`, `ecr`, `argocd`).
+- **Subnets privadas**: nodes do EKS, RDS e ElastiCache agora vivem em
+  subnets privadas, com egress via NAT Gateway. Antes tudo era público.
+- **Security Groups mais restritos**: bancos só aceitam conexão vindo do
+  Security Group dos nodes do EKS (antes era `0.0.0.0/0` nas portas 5432/6379).
+- **DynamoDB renomeado** para `ToggleMasterAnalytics`, conforme especificação.
+- **SQS com Dead Letter Queue** para mensagens que falham repetidamente.
+- **ECR com lifecycle policy** (mantém as últimas 15 imagens por repositório).
+- **Módulo ArgoCD**: instala o Argo CD via Helm diretamente no cluster,
+  preparando o terreno para o GitOps pull-based (ver `../gitops/`).
+
+## Observação sobre acesso ao banco de dados
+
+Como RDS/Redis agora estão em subnets privadas e `publicly_accessible = false`,
+não é mais possível conectar direto da máquina local (como no
+`seed-databases.sh` da Fase 2). Para popular/depurar os bancos, use um pod
+temporário dentro do cluster (`kubectl run psql-client --rm -it --image
+postgres:16 -- bash`) ou um `kubectl port-forward` para um pod que tenha
+acesso à VPC. Essa troca foi uma decisão consciente de hardening pedida pela
+Fase 3 ("se não está no código, não existe" também vale para segurança de rede).
