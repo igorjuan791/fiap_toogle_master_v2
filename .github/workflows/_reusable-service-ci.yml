@@ -71,6 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go
         if: inputs.language == 'go'
@@ -126,12 +128,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go
         if: inputs.language == 'go'
         uses: actions/setup-go@v5
         with:
           go-version: "1.21"
+          cache-dependency-path: ${{ inputs.service_path }}/go.sum
 
       - name: golangci-lint
         if: inputs.language == 'go'
@@ -162,9 +167,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Trivy filesystem scan (dependências)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: ${{ inputs.service_path }}
@@ -182,12 +189,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go
         if: inputs.language == 'go'
         uses: actions/setup-go@v5
         with:
           go-version: "1.21"
+          cache-dependency-path: ${{ inputs.service_path }}/go.sum
 
       - name: gosec (Go SAST)
         if: inputs.language == 'go'
@@ -226,6 +236,8 @@ jobs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Compute image tag
         id: vars
@@ -239,7 +251,7 @@ jobs:
             .
 
       - name: Trivy container image scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ inputs.service_name }}:${{ steps.vars.outputs.image_tag }}
           severity: CRITICAL,HIGH
