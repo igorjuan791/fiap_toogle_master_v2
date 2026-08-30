@@ -7,12 +7,17 @@ WORKDIR /app
 COPY services/analytics-service/requirements.txt .
 
 # Install dependencies to a local directory
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --upgrade pip wheel
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # --- Final Stage ---
 FROM python:3.11-slim
 
 # Create a non-root user and group
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --upgrade pip wheel
+
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 WORKDIR /app
