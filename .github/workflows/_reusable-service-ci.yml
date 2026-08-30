@@ -311,7 +311,18 @@ jobs:
           git add ${{ inputs.gitops_path }}
           if git diff --cached --quiet; then
             echo "Nenhuma mudança para commitar."
-          else
-            git commit -m "ci(gitops): atualiza imagem de ${{ inputs.service_name }} para ${{ needs.docker-build-push.outputs.image_tag }}"
-            git push
+            exit 0
           fi
+          git commit -m "ci(gitops): atualiza imagem de ${{ inputs.service_name }} para ${{ needs.docker-build-push.outputs.image_tag }}"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Push OK"
+              exit 0
+            fi
+            echo "Push falhou (tentativa $i/5) - outro job deve ter empurrado primeiro. Rebase e tenta de novo..."
+            git fetch origin main
+            git rebase origin/main
+            sleep $((RANDOM % 5 + 1))
+          done
+          echo "Falhou apos 5 tentativas"
+          exit 1
