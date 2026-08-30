@@ -25,6 +25,7 @@ WORKDIR /app
 
 # Copy only the installed dependencies from the builder stage
 COPY --from=builder /install /usr/local
+RUN rm -rf /usr/local/lib/python3.11/site-packages/setuptools* /usr/local/lib/python3.11/site-packages/wheel* /usr/local/lib/python3.11/site-packages/jaraco* /usr/local/lib/python3.11/site-packages/pip*
 
 # Copy the application code
 COPY services/analytics-service/ .
