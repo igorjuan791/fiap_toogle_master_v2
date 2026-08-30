@@ -1,6 +1,26 @@
-# ToogleMaster - Fase 2
+# ToggleMaster - Fase 2 + Fase 3
 
-Este projeto é a evolução do ToggleMaster para uma arquitetura de microsserviços distribuídos, desenvolvida para o Tech Challenge Fase 2.
+Este projeto é a evolução do ToggleMaster para uma arquitetura de microsserviços distribuídos (Fase 2) e, na **Fase 3**, para uma operação totalmente automatizada com IaC, pipelines de CI/DevSecOps e entrega contínua via GitOps/ArgoCD.
+
+## 🆕 Fase 3 — IaC, CI/CD DevSecOps e GitOps
+
+| O que | Onde | Doc |
+|---|---|---|
+| Infraestrutura como código (módulos Terraform + backend remoto S3) | `terraform/` | [terraform/README.md](terraform/README.md) |
+| Pipelines de CI + DevSecOps (build, lint, SCA, SAST, build & push da imagem) | `.github/workflows/` | [docs/CI_SETUP.md](docs/CI_SETUP.md) |
+| Entrega contínua via GitOps (manifestos + ArgoCD) | `gitops/` | [gitops/README.md](gitops/README.md) |
+| Roteiro para o vídeo de demonstração | `docs/DEMO_SCRIPT.md` | [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| Template do relatório de entrega | `docs/RELATORIO_TEMPLATE.md` | [docs/RELATORIO_TEMPLATE.md](docs/RELATORIO_TEMPLATE.md) |
+
+Fluxo resumido: `terraform apply` sobe VPC/EKS/RDS/Redis/DynamoDB/SQS/ECR →
+push na `main` de um microsserviço dispara o pipeline (build → lint → SCA →
+SAST → build/scan/push da imagem no ECR) → o próprio pipeline atualiza a tag
+da imagem em `gitops/<serviço>/deployment.yaml` → o **ArgoCD**, instalado no
+EKS, detecta a mudança e sincroniza o cluster automaticamente.
+
+A pasta `k8s/` (deploy manual/Helm) e os scripts em `aws-infra/` continuam
+funcionando e são úteis para debug local — mas o caminho "oficial" de
+entrega da Fase 3 é `terraform/` + `.github/workflows/` + `gitops/`.
 
 ## 🚀 Como Rodar Localmente
 
@@ -50,13 +70,14 @@ chmod +x setup-cloud.sh
 *Este script automatiza o Terraform + Build/Push + Seeding + Patching do K8s.*
 
 ### Opção 2: Terraform Manual (IaC)
-Se preferir gerenciar os recursos manualmente:
+Se preferir gerenciar os recursos manualmente (fluxo completo, com backend remoto, em [terraform/README.md](terraform/README.md)):
 
 1. Acesse a pasta: `cd terraform`
-2. Configure suas variáveis no arquivo `terraform.tfvars` (use o `.example` como base).
-3. Execute os comandos:
+2. (uma vez) Crie o bucket S3 do state com `terraform/bootstrap` e copie `backend.hcl.example` para `backend.hcl`.
+3. Configure suas variáveis no arquivo `terraform.tfvars` (use o `.example` como base).
+4. Execute os comandos:
 ```bash
-terraform init
+terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 ```

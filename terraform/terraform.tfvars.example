@@ -1,4 +1,10 @@
+# Copie para terraform.tfvars (ja esta no .gitignore) e ajuste os valores.
+
 region        = "us-east-1"
 db_password   = "SuaSenhaAqui"
+project_name  = "ToggleMaster"
+
+# AWS Academy: deixe use_lab_role = true e ajuste lab_role_name se necessario.
+# Conta pessoal: use_lab_role = false (Terraform cria as roles de IAM).
+use_lab_role  = true
 lab_role_name = "LabRole"
-project_name  = "ToogleMaster"

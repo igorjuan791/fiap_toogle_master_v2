@@ -84,7 +84,7 @@ services:
     tag: latest
     port: 8005
     sqsUrl: "https://sqs.us-east-1.amazonaws.com/123456789012/toogle-events"
-    dbTable: "analytics_events"
+    dbTable: "ToggleMasterAnalytics"
     resources:
       requests:
         cpu: 100m

@@ -16,7 +16,14 @@ _override.tf.json
 terraform.rc
 terraform/.terraform.lock.hcl
 terraform/.terraform.tfstate.lock.info
+terraform/backend.hcl
+terraform/bootstrap/.terraform.lock.hcl
 deployment-summary.txt
+
+# GitOps / ArgoCD (gerado localmente, nao versionar credenciais)
+gitops/.argocd-admin-password
+gitops/secrets/*.env
+!gitops/secrets/*.env.example
 .env
 .env.*
 k8s/.env

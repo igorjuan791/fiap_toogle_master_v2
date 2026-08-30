@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: toggle-master-shared
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__
+    targetRevision: main
+    path: gitops
+    directory:
+      recurse: false # so os arquivos soltos em gitops/ (namespace.yaml, ingress.yaml), nao os subdiretorios dos servicos
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: toogle-master
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

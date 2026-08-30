@@ -1,0 +1,10 @@
+# Copie para backend.hcl (ja esta no .gitignore) e ajuste os valores.
+# Use: terraform init -backend-config=backend.hcl
+#
+# O bucket precisa existir ANTES do init -- crie-o com `terraform/bootstrap`
+# (veja terraform/bootstrap/README.md) ou manualmente:
+#   aws s3api create-bucket --bucket SEU-BUCKET-DE-STATE --region us-east-1
+
+bucket = "SEU-BUCKET-DE-STATE"
+key    = "toggle-master/terraform.tfstate"
+region = "us-east-1"

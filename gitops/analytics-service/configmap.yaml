@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analytics-service-config
+  namespace: toogle-master
+data:
+  PORT: "8005"
+  AWS_REGION: "us-east-1"
+  # Nome exigido pelo desafio da Fase 3 (era "analytics_events" na Fase 2).
+  AWS_DYNAMODB_TABLE: "ToggleMasterAnalytics"

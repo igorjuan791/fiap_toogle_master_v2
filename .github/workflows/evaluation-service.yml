@@ -1,0 +1,34 @@
+name: evaluation-service CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/evaluation-service/**"
+      - "docker/Dockerfile.evaluation"
+      - ".github/workflows/evaluation-service.yml"
+      - ".github/workflows/_reusable-service-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/evaluation-service/**"
+      - "docker/Dockerfile.evaluation"
+      - ".github/workflows/evaluation-service.yml"
+      - ".github/workflows/_reusable-service-ci.yml"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_reusable-service-ci.yml
+    with:
+      service_name: evaluation-service
+      service_path: services/evaluation-service
+      dockerfile: docker/Dockerfile.evaluation
+      language: go
+      port: "8004"
+      gitops_path: gitops/evaluation-service/deployment.yaml
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
