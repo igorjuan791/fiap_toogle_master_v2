@@ -1,15 +1,15 @@
 [submodule "auth-service"]
 	path = services/auth-service
-	url = https://github.com/3DCLT-Fiap-Devops/auth-service
+	url = https://github.com/igorjuan791/auth-service
 [submodule "targeting-service"]
 	path = services/targeting-service
-	url = https://github.com/3DCLT-Fiap-Devops/targeting-service
+	url = https://github.com/igorjuan791/targeting-service
 [submodule "analytics-service"]
 	path = services/analytics-service
-	url = https://github.com/3DCLT-Fiap-Devops/analytics-service
+	url = https://github.com/igorjuan791/analytics-service
 [submodule "flag-service"]
 	path = services/flag-service
-	url = https://github.com/3DCLT-Fiap-Devops/flag-service
+	url = https://github.com/igorjuan791/flag-service
 [submodule "evaluation-service"]
 	path = services/evaluation-service
-	url = https://github.com/3DCLT-Fiap-Devops/evaluation-service
+	url = https://github.com/igorjuan791/evaluation-service
