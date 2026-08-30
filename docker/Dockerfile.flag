@@ -20,6 +20,7 @@ FROM python:3.11-slim
 # Create a non-root user and group
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --upgrade pip wheel
+RUN rm -rf /usr/local/lib/python3.11/ensurepip/_bundled
 
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
