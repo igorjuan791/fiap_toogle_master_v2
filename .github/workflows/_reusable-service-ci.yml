@@ -145,6 +145,7 @@ jobs:
           version: latest
           working-directory: ${{ inputs.service_path }}
           args: --timeout=5m
+          install-mode: goinstall
 
       - name: Set up Python
         if: inputs.language == 'python'
