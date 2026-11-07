@@ -150,7 +150,7 @@ Os arquivos já estão na pasta `services/evaluation-service` depois do unzip (o
 cd ~/fiap_toogle_master_v2/services/evaluation-service
 git checkout -b fase4/05-instrumentacao-go
 go build ./... && go vet ./...
-grep '^go ' go.mod   # tem que continuar "go 1.25.0" (versões do OTel fixadas para isso)
+grep "^go " go.mod   # tem que ser "go 1.26.0": a versão corrigida do golang.org/x/net exige Go 1.26
 git add . && git commit -m "feat(fase4): instrumentacao OpenTelemetry, propagacao de trace na SQS e chaos endpoint"
 git push -u origin fase4/05-instrumentacao-go
 gh pr create --fill --base main
