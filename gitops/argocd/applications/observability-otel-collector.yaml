@@ -9,7 +9,7 @@ spec:
   sources:
     - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
       chart: opentelemetry-collector
-      targetRevision: "*"   # TROCAR pela versao estavel atual: helm search repo open-telemetry/opentelemetry-collector
+      targetRevision: "0.178.2"
       helm:
         releaseName: otel-collector
         valueFiles:

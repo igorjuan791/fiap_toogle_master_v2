@@ -29,6 +29,12 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: false   # sem EBS CSI driver: usa emptyDir. Nao reinicie o pod do Loki durante a gravacao.
+  extraVolumes:
+    - name: data
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: data
+      mountPath: /var/loki   # o rootfs e read-only e o chart nao monta nada aqui sem persistence
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { memory: 1Gi }
