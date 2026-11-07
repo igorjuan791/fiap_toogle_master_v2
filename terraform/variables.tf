@@ -121,5 +121,5 @@ variable "sqs_queue_name" {
 
 variable "ecr_repository_names" {
   type    = list(string)
-  default = ["analytics-service", "auth-service", "evaluation-service", "flag-service", "targeting-service"]
+  default = ["analytics-service", "auth-service", "evaluation-service", "flag-service", "targeting-service", "self-healer"]
 }

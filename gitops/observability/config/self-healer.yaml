@@ -1,0 +1,100 @@
+# Self-healer (Fase 4): recebe o webhook do Grafana e faz rollout restart do servico com problema.
+# RBAC minimo: so get/patch em deployments, e so no namespace toogle-master.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: self-healer
+  namespace: observability
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: self-healer-restart
+  namespace: toogle-master
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: self-healer-restart
+  namespace: toogle-master
+subjects:
+  - kind: ServiceAccount
+    name: self-healer
+    namespace: observability
+roleRef:
+  kind: Role
+  name: self-healer-restart
+  apiGroup: rbac.authorization.k8s.io
+---
+# Atualizado automaticamente pelo pipeline de CI (job "update-gitops").
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: self-healer
+  namespace: observability
+  labels:
+    app: self-healer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: self-healer
+  template:
+    metadata:
+      labels:
+        app: self-healer
+    spec:
+      serviceAccountName: self-healer
+      containers:
+        - name: self-healer
+          image: 304368728585.dkr.ecr.us-east-1.amazonaws.com/self-healer:v1.0.0-inicial
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DEFAULT_NAMESPACE
+              value: toogle-master
+            - name: COOLDOWN_SECONDS
+              value: "300"
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-alerting-secrets
+                  key: DISCORD_WEBHOOK_URL
+                  optional: true
+          resources:
+            requests: { cpu: 20m, memory: 96Mi }
+            limits: { cpu: 200m, memory: 256Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: self-healer
+  namespace: observability
+spec:
+  selector:
+    app: self-healer
+  ports:
+    - port: 8080
+      targetPort: 8080

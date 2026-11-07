@@ -1,0 +1,43 @@
+# Gerador de carga continuo (Fase 4): sem trafego nao ha taxa de requisicoes, traces nem base para o alerta de 5%.
+# Chama o evaluation-service ~4x por segundo. Mistura flags existentes (cache no Redis) com nomes
+# inexistentes (cache miss -> o evaluation chama flag-service e targeting-service, gerando trace distribuido).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: observability
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: curlimages/curl:8.11.1
+          env:
+            - name: TARGET
+              value: http://evaluation-service.toogle-master.svc.cluster.local:8004
+            - name: FLAGS   # new_checkout_flow e testenovo3 vem de requests_k8s.http / requests.http; os demais forcam cache miss
+              value: "new_checkout_flow testenovo3 flag-inexistente-a flag-inexistente-b"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "gerando carga em $TARGET";
+              i=0;
+              while true; do
+                for f in $FLAGS; do
+                  i=$((i+1));
+                  curl -s -o /dev/null -w "%{http_code} $f\n" "$TARGET/evaluate?user_id=user-$((i % 500))&flag_name=$f" || true;
+                  sleep 0.25;
+                done;
+              done
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { cpu: 100m, memory: 64Mi }

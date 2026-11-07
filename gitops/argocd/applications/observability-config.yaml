@@ -1,0 +1,24 @@
+# Fase 4 - Configuracao "nossa" da observabilidade: dashboard, regras de alerta,
+# contact points, self-healer e gerador de carga. Manifests puros em gitops/observability/config.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-config
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__
+    targetRevision: main
+    path: gitops/observability/config
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

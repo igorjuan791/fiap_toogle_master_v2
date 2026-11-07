@@ -1,0 +1,94 @@
+# Alertas do Grafana provisionados como codigo (sidecar do Grafana le ConfigMaps com label grafana_alert).
+# Segredos (PagerDuty, Discord) NAO ficam aqui: vem do Secret grafana-alerting-secrets via $__env{...}.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: togglemaster-alerting
+  namespace: observability
+  labels:
+    grafana_alert: "1"
+data:
+  contact-points.yaml: |
+    apiVersion: 1
+    contactPoints:
+      - orgId: 1
+        name: togglemaster-oncall
+        receivers:
+          - uid: togglemaster-pagerduty
+            type: pagerduty
+            settings:
+              integrationKey: $__env{PAGERDUTY_KEY}
+              severity: critical
+              class: togglemaster
+              component: '{{ .CommonLabels.deployment }}'
+              summary: '{{ .CommonLabels.alertname }} - {{ .CommonLabels.deployment }}'
+          - uid: togglemaster-discord
+            type: discord
+            settings:
+              url: $__env{DISCORD_WEBHOOK_URL}
+              title: '{{ if eq .Status "firing" }}🚨 ALERTA{{ else }}✅ RESOLVIDO{{ end }}: {{ .CommonLabels.alertname }}'
+              message: |
+                {{ range .Alerts }}**Servico:** {{ .Labels.deployment }} (namespace {{ .Labels.namespace }})
+                **Status:** {{ .Status }} | **Severidade:** {{ .Labels.severity }}
+                **Valor atual:** {{ range $k, $v := .Values }}{{ $k }}={{ printf "%.2f" $v }} {{ end }}
+                **Resumo:** {{ .Annotations.summary }}
+                **Acao automatica:** {{ .Annotations.self_healing }}
+                **Runbook:** {{ .Annotations.runbook_url }}
+                {{ end }}
+          - uid: togglemaster-selfhealer
+            type: webhook
+            settings:
+              url: http://self-healer.observability.svc.cluster.local:8080/webhook
+              httpMethod: POST
+    policies:
+      - orgId: 1
+        receiver: togglemaster-oncall
+        group_by: [alertname, deployment]
+        group_wait: 10s
+        group_interval: 1m
+        repeat_interval: 30m
+
+  rules.yaml: |
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: togglemaster-slo
+        folder: ToggleMaster
+        interval: 30s
+        rules:
+          - uid: eval-5xx-rate
+            title: evaluation-service com taxa de erro 5xx acima de 5%
+            condition: C
+            for: 1m
+            noDataState: OK
+            execErrState: Error
+            data:
+              - refId: A
+                relativeTimeRange: { from: 300, to: 0 }
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: |
+                    (
+                      sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service", http_response_status_code=~"5.."}[1m]))
+                      or vector(0)
+                    )
+                    /
+                    sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service"}[1m]))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator: { type: gt, params: [0.05] }
+            labels:
+              severity: critical
+              deployment: evaluation-service
+              namespace: toogle-master
+            annotations:
+              summary: Mais de 5% das requisicoes do evaluation-service estao retornando 5xx no ultimo minuto.
+              self_healing: rollout restart automatico do deployment/evaluation-service pelo self-healer
+              runbook_url: https://github.com/igorjuan791/fiap_toogle_master_v2/blob/main/docs/RUNBOOK.md

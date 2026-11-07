@@ -1,0 +1,30 @@
+# Fase 4 - Prometheus + Grafana (+ node-exporter, kube-state-metrics) via Helm, gerenciado pelo ArgoCD.
+# Multi-source: o chart vem do repositorio oficial e o values.yaml vem deste repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: "*"   # TROCAR pela versao estavel atual: helm search repo prometheus-community/kube-prometheus-stack
+      helm:
+        releaseName: kps
+        valueFiles:
+          - $values/gitops/observability/kube-prometheus-stack/values.yaml
+    - repoURL: __REPO_URL__
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true   # os CRDs do prometheus-operator sao grandes demais para client-side apply

@@ -1,0 +1,70 @@
+# kube-prometheus-stack - Fase 4 (ToggleMaster)
+# Prometheus guarda metricas de infra (node-exporter, kube-state-metrics, kubelet/cAdvisor)
+# e recebe as metricas dos microsservicos via remote write do OTel Collector.
+
+fullnameOverride: kps   # nomes curtos: kps-prometheus, kps-grafana
+
+alertmanager:
+  enabled: false   # alertas ficam so no Grafana (uma unica fonte de alertas = menos alert fatigue)
+
+prometheus:
+  prometheusSpec:
+    enableRemoteWriteReceiver: true   # endpoint /api/v1/write usado pelo OTel Collector
+    retention: 2d
+    # sem persistencia (EKS sem EBS CSI driver na LabRole): dados somem se o pod reiniciar
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits: { memory: 1536Mi }
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+
+kube-state-metrics:
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 20m, memory: 32Mi }
+
+# componentes do control plane gerenciado do EKS nao sao acessiveis -> desliga para nao gerar alvos DOWN
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeEtcd: { enabled: false }
+kubeProxy: { enabled: false }
+
+defaultRules:
+  create: false   # nao usamos Alertmanager; nossas regras ficam no Grafana
+
+grafana:
+  admin:
+    existingSecret: grafana-admin       # criado a mao (ver gitops/secrets/observability.env.example)
+    userKey: admin-user
+    passwordKey: admin-password
+  envFromSecret: grafana-alerting-secrets   # PAGERDUTY_KEY e DISCORD_WEBHOOK_URL, lidos com $__env{...}
+  resources:
+    requests: { cpu: 50m, memory: 192Mi }
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+    alerts:
+      enabled: true
+      label: grafana_alert
+      searchNamespace: ALL
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki.observability.svc.cluster.local:3100
+      jsonData:
+        maxLines: 1000
