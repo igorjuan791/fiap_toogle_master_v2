@@ -1,0 +1,28 @@
+# Fase 4 - OpenTelemetry Collector (peca central: recebe e roteia metricas, logs e traces).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-otel-collector
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: "*"   # TROCAR pela versao estavel atual: helm search repo open-telemetry/opentelemetry-collector
+      helm:
+        releaseName: otel-collector
+        valueFiles:
+          - $values/gitops/observability/otel-collector/values.yaml
+    - repoURL: __REPO_URL__
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

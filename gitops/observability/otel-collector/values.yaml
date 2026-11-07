@@ -1,0 +1,80 @@
+# OpenTelemetry Collector - Fase 4 (ToggleMaster)
+# DaemonSet: um coletor por no. Ele:
+#   - recebe OTLP (traces, metricas, logs) dos 5 microsservicos
+#   - le os logs de TODOS os conteineres do no (/var/log/pods) via filelog
+#   - enriquece tudo com metadados do Kubernetes (pod, namespace, deployment)
+#   - roteia: metricas -> Prometheus, logs -> Loki, traces/metricas/logs -> New Relic (APM)
+mode: daemonset
+fullnameOverride: otel-collector
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+
+presets:
+  logsCollection:
+    enabled: true            # adiciona o receiver filelog no pipeline de logs
+    includeCollectorLogs: false
+  kubernetesAttributes:
+    enabled: true            # adiciona o processor k8sattributes (+ RBAC) em todos os pipelines
+
+# license key do New Relic vem de um Secret criado a mao (nunca no git)
+extraEnvsFrom:
+  - secretRef:
+      name: newrelic-license
+
+service:
+  enabled: true
+  internalTrafficPolicy: Local   # cada app fala com o coletor do proprio no
+
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits: { memory: 512Mi }
+
+ports:
+  jaeger-compact: { enabled: false }
+  jaeger-thrift: { enabled: false }
+  jaeger-grpc: { enabled: false }
+  zipkin: { enabled: false }
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc: { endpoint: "${env:MY_POD_IP}:4317" }
+        http: { endpoint: "${env:MY_POD_IP}:4318" }
+  processors:
+    memory_limiter:
+      check_interval: 1s
+      limit_percentage: 75
+      spike_limit_percentage: 15
+    batch: {}
+    resource:
+      attributes:
+        - key: deployment.environment
+          value: fiap-fase4
+          action: upsert
+  exporters:
+    prometheusremotewrite:
+      endpoint: http://kps-prometheus.observability.svc.cluster.local:9090/api/v1/write
+      resource_to_telemetry_conversion:
+        enabled: true
+    otlphttp/loki:
+      endpoint: http://loki.observability.svc.cluster.local:3100/otlp
+    otlphttp/newrelic:
+      endpoint: https://otlp.nr-data.net   # conta na regiao EU: https://otlp.eu01.nr-data.net
+      headers:
+        api-key: "${env:NEW_RELIC_LICENSE_KEY}"
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, resource, batch]
+        exporters: [otlphttp/newrelic]
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, resource, batch]
+        exporters: [prometheusremotewrite, otlphttp/newrelic]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, resource, batch]
+        exporters: [otlphttp/loki, otlphttp/newrelic]

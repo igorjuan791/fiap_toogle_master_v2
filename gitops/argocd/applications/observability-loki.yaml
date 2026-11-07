@@ -1,0 +1,29 @@
+# Fase 4 - Loki (logs centralizados), modo SingleBinary.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-loki
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: "*"   # TROCAR pela versao estavel atual: helm search repo grafana/loki
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $values/gitops/observability/loki/values.yaml
+    - repoURL: __REPO_URL__
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
