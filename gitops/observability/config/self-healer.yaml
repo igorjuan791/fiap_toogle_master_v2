@@ -51,7 +51,7 @@ spec:
       serviceAccountName: self-healer
       containers:
         - name: self-healer
-          image: 304368728585.dkr.ecr.us-east-1.amazonaws.com/self-healer:v1.0.0-inicial
+          image: 891377314970.dkr.ecr.us-east-1.amazonaws.com/self-healer:v1.0.0-inicial
           ports:
             - containerPort: 8080
           env:
