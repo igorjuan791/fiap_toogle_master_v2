@@ -9,7 +9,8 @@ COPY self-healer/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
  # wheels antigos embutidos na imagem base (o Trivy acusa CVE neles - licao da Fase 3)
- && rm -rf /usr/local/lib/python3.11/ensurepip/_bundled
+ && rm -rf /usr/local/lib/python3.11/ensurepip/_bundled \n # setuptools/wheel/pip nao sao usados em runtime e trazem pacotes vendorizados com CVE
+ && rm -rf /usr/local/lib/python3.11/site-packages/setuptools* /usr/local/lib/python3.11/site-packages/wheel* \n           /usr/local/lib/python3.11/site-packages/jaraco* /usr/local/lib/python3.11/site-packages/pip*
 
 COPY self-healer/app.py .
 
