@@ -60,6 +60,8 @@ spec:
                   name: analytics-service-secret
                   key: AWS_SESSION_TOKEN
                   optional: true
+                        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc.cluster.local:4318
           resources:
             requests:
               cpu: "100m"
