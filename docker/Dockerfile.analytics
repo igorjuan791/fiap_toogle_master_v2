@@ -10,6 +10,11 @@ COPY services/analytics-service/requirements.txt .
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --upgrade pip wheel
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install \
+    opentelemetry-distro==0.48b0 \
+    opentelemetry-exporter-otlp==1.27.0 \
+    opentelemetry-instrumentation-flask==0.48b0 \
+    opentelemetry-instrumentation-botocore==0.48b0
 
 # --- Final Stage ---
 FROM python:3.11-slim
@@ -42,6 +47,12 @@ EXPOSE 8005
 # Define environment variables
 ENV PORT=8005
 ENV PYTHONUNBUFFERED=1
+ENV OTEL_SERVICE_NAME=analytics-service
+ENV OTEL_RESOURCE_ATTRIBUTES=service.namespace=togglemaster,deployment.environment=prod
+ENV OTEL_TRACES_EXPORTER=otlp
+ENV OTEL_METRICS_EXPORTER=otlp
+ENV OTEL_LOGS_EXPORTER=none
+ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 
 # Run the application
-CMD ["gunicorn", "-b", "0.0.0.0:8005", "app:app"]
+CMD ["opentelemetry-instrument", "gunicorn", "-b", "0.0.0.0:8005", "app:app"]
