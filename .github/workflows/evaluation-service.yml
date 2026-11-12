@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "services/evaluation-service/**"
+      - "services/evaluation-service"
       - "docker/Dockerfile.evaluation"
       - ".github/workflows/evaluation-service.yml"
       - ".github/workflows/_reusable-service-ci.yml"
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - "services/evaluation-service/**"
+      - "services/evaluation-service"
       - "docker/Dockerfile.evaluation"
       - ".github/workflows/evaluation-service.yml"
       - ".github/workflows/_reusable-service-ci.yml"
