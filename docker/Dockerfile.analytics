@@ -47,7 +47,7 @@ ENV OTEL_RESOURCE_ATTRIBUTES=service.namespace=toogle-master,deployment.environm
 ENV OTEL_TRACES_EXPORTER=otlp
 ENV OTEL_METRICS_EXPORTER=otlp
 ENV OTEL_LOGS_EXPORTER=none
-ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+ENV OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 # Run the application
 CMD ["opentelemetry-instrument", "gunicorn", "-b", "0.0.0.0:8005", "app:app"]
