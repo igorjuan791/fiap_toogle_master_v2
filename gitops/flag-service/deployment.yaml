@@ -22,6 +22,8 @@ spec:
           ports:
             - containerPort: 8002
           env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc.cluster.local:4318
             - name: PORT
               valueFrom:
                 configMapKeyRef:

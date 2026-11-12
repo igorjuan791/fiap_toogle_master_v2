@@ -13,6 +13,8 @@ COPY services/flag-service/requirements.txt .
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --upgrade pip wheel
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# OpenTelemetry: auto-instrumentacao (traces e metricas) via opentelemetry-instrument
+RUN pip install --no-cache-dir --prefix=/install opentelemetry-distro==0.66b2 opentelemetry-exporter-otlp==1.45.2 opentelemetry-instrumentation-flask==0.66b2 opentelemetry-instrumentation-psycopg2==0.66b2 opentelemetry-instrumentation-requests==0.66b2
 
 # --- Final Stage ---
 FROM python:3.11-slim
@@ -47,4 +49,11 @@ ENV PORT=8002
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-CMD ["gunicorn", "-b", "0.0.0.0:8002", "app:app"]
+ENV OTEL_SERVICE_NAME=flag-service
+ENV OTEL_RESOURCE_ATTRIBUTES=service.namespace=toogle-master,deployment.environment=fiap-fase4
+ENV OTEL_TRACES_EXPORTER=otlp
+ENV OTEL_METRICS_EXPORTER=otlp
+ENV OTEL_LOGS_EXPORTER=none
+ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+
+CMD ["opentelemetry-instrument", "gunicorn", "-b", "0.0.0.0:8002", "app:app"]
