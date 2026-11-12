@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "services/flag-service/**"
+      - "services/flag-service"
       - "docker/Dockerfile.flag"
       - ".github/workflows/flag-service.yml"
       - ".github/workflows/_reusable-service-ci.yml"
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - "services/flag-service/**"
+      - "services/flag-service"
       - "docker/Dockerfile.flag"
       - ".github/workflows/flag-service.yml"
       - ".github/workflows/_reusable-service-ci.yml"
