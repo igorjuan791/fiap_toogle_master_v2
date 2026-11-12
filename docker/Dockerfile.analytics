@@ -10,11 +10,6 @@ COPY services/analytics-service/requirements.txt .
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --upgrade pip wheel
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-RUN pip install --no-cache-dir --prefix=/install \
-    opentelemetry-distro==0.66b2 \
-    opentelemetry-exporter-otlp==1.45.2 \
-    opentelemetry-instrumentation-flask==0.66b2 \
-    opentelemetry-instrumentation-botocore==0.66b2
 
 # --- Final Stage ---
 FROM python:3.11-slim
