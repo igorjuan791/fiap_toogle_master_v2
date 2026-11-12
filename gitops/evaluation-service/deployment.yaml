@@ -75,6 +75,10 @@ spec:
                   name: evaluation-service-secret
                   key: AWS_SESSION_TOKEN
                   optional: true
+            - name: OTEL_SERVICE_NAME
+              value: evaluation-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc.cluster.local:4317
           resources:
             requests:
               cpu: "200m"
