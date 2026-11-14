@@ -71,11 +71,11 @@ data:
                   instant: true
                   expr: |
                     (
-                      sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service", http_response_status_code=~"5.."}[1m]))
+                      (sum(rate(http_server_requests_total{job=~".*evaluation-service", status=~"5.."}[1m])) or sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service", http_response_status_code=~"5.."}[1m])))
                       or vector(0)
                     )
                     /
-                    sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service"}[1m]))
+                    (sum(rate(http_server_requests_total{job=~".*evaluation-service"}[1m])) or sum(rate(http_server_request_duration_seconds_count{job=~".*evaluation-service"}[1m])))
               - refId: C
                 datasourceUid: __expr__
                 model:
