@@ -193,6 +193,6 @@ Nos outros 4 serviços, cada `deployment.yaml` recebe as mesmas 3 variáveis (tr
 kubectl -n toogle-master get pods -l app=evaluation-service -w
 # terminal 2: ligar a falha em um pod (~50% das respostas viram 500, bem acima dos 5%)
 kubectl -n toogle-master port-forward deploy/evaluation-service 8004:8004 &
-curl -s -X POST localhost:8004/chaos/enable
+curl -s -X POST "localhost:8004/chaos/fail?enable=true"   # desligar: ?enable=false
 ```
 Sequência esperada (≈2 a 3 min): painel de 5xx sobe → alerta `Pending` → `Firing` → incidente no PagerDuty + mensagem no Discord → self-healer faz o restart (mensagem 🤖) → pods novos sem chaos → erro volta a 0 → alerta `Normal` → incidente resolvido sozinho e mensagem ✅ no Discord.
