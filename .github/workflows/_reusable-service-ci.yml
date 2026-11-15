@@ -232,7 +232,7 @@ jobs:
     name: Docker Build & Push
     runs-on: ubuntu-latest
     needs: [build-test, lint, sca, sast]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
     steps:
@@ -285,13 +285,14 @@ jobs:
     name: Update GitOps manifest
     runs-on: ubuntu-latest
     needs: docker-build-push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main   # sempre a ponta da main: um re-run nao tenta empurrar um commit antigo
 
       - name: Atualizar tag da imagem no manifesto GitOps
         run: |
