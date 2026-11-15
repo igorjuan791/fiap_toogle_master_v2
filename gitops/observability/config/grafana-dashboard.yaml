@@ -418,7 +418,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "100 * (sum by (job) (rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[1m])) or (0 * sum by (job) (rate(http_server_request_duration_seconds_count[1m])))) / sum by (job) (rate(http_server_request_duration_seconds_count[1m]))",
+              "expr": "100 * ((sum by (job) (rate(http_server_requests_total{status=~\"5..\"}[1m])) or sum by (job) (rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[1m]))) or (0 * (sum by (job) (rate(http_server_requests_total[1m])) or sum by (job) (rate(http_server_request_duration_seconds_count[1m]))))) / (sum by (job) (rate(http_server_requests_total[1m])) or sum by (job) (rate(http_server_request_duration_seconds_count[1m])))",
               "legendFormat": "{{job}}"
             }
           ]
