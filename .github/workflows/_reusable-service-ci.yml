@@ -282,48 +282,25 @@ jobs:
   # 6. GitOps: atualiza a tag da imagem no manifesto de deploy
   # ---------------------------------------------------------------
   update-gitops:
-    name: Update GitOps manifest
+    name: Report published image for GitOps PR
     runs-on: ubuntu-latest
     needs: docker-build-push
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     permissions:
-      contents: write
+      contents: read
+    env:
+      REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      SERVICE_NAME: ${{ inputs.service_name }}
+      IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
+      GITOPS_PATH: ${{ inputs.gitops_path }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main   # sempre a ponta da main: um re-run nao tenta empurrar um commit antigo
-
-      - name: Atualizar tag da imagem no manifesto GitOps
+      - name: Report image for reviewed GitOps update
         run: |
-          set -e
-          REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
-          NEW_IMAGE="$REGISTRY/${{ inputs.service_name }}:${{ needs.docker-build-push.outputs.image_tag }}"
-          FILE="${{ inputs.gitops_path }}"
-
-          echo "Atualizando $FILE para imagem: $NEW_IMAGE"
-          sed -i -E "s#image: .*/${{ inputs.service_name }}:.*#image: ${NEW_IMAGE}#" "$FILE"
-          grep "image:" "$FILE"
-
-      - name: Commit & push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ${{ inputs.gitops_path }}
-          if git diff --cached --quiet; then
-            echo "Nenhuma mudança para commitar."
-            exit 0
-          fi
-          git commit -m "ci(gitops): atualiza imagem de ${{ inputs.service_name }} para ${{ needs.docker-build-push.outputs.image_tag }}"
-          for i in 1 2 3 4 5; do
-            if git push; then
-              echo "Push OK"
-              exit 0
-            fi
-            echo "Push falhou (tentativa $i/5) - outro job deve ter empurrado primeiro. Rebase e tenta de novo..."
-            git fetch origin main
-            git rebase origin/main
-            sleep $((RANDOM % 5 + 1))
-          done
-          echo "Falhou apos 5 tentativas"
-          exit 1
+          IMAGE="$REGISTRY/$SERVICE_NAME:$IMAGE_TAG"
+          echo "Published image: $IMAGE"
+          {
+            echo "## GitOps update requires a reviewed pull request"
+            echo
+            echo "Image: $IMAGE"
+            echo "Manifest: $GITOPS_PATH"
+          } >> "$GITHUB_STEP_SUMMARY"
