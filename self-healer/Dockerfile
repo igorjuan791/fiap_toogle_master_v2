@@ -2,6 +2,11 @@
 #   docker build -f self-healer/Dockerfile -t self-healer .
 FROM python:3.11-slim
 
+# Atualiza a biblioteca do sistema antes de executar como usuario nao-root.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends --only-upgrade zlib1g \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
